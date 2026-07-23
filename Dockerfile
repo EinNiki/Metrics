@@ -24,7 +24,7 @@ RUN mkdir -p modules_bin && \
 FROM rust:1.80-slim-bookworm
 
 # Install runtime dependencies (git is needed for custom modules, zfsutils-linux for ZFS execution, curl for healthcheck)
-RUN apt-get update && apt-get install -y git zfsutils-linux curl && rm -rf /var/lib/apt/lists/*
+RUN apt-get update && apt-get install -y git curl && rm -rf /var/lib/apt/lists/*
 
 WORKDIR /app
 

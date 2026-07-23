@@ -13,10 +13,8 @@ services:
     volumes:
       - metrics-data:/data              # SurrealKV database storage
       - metrics-modules:/app/modules_bin # Persistent compiled module binaries
-      - metrics-config:/app/config      # Configuration files (if needed)
     restart: unless-stopped
 
 volumes:
   metrics-data:
   metrics-modules:
-  metrics-config:
