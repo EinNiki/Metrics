@@ -1,4 +1,4 @@
-FROM rust:1.80-slim-bookworm AS builder
+FROM rust:slim-bookworm AS builder
 
 # Install build dependencies
 RUN apt-get update && apt-get install -y git build-essential pkg-config libssl-dev && rm -rf /var/lib/apt/lists/*
@@ -6,7 +6,7 @@ RUN apt-get update && apt-get install -y git build-essential pkg-config libssl-d
 WORKDIR /app
 
 # Copy the workspace configuration and files
-COPY Cargo.toml ./
+COPY Cargo.toml Cargo.lock ./
 COPY metrics-api ./metrics-api
 COPY metrics-core ./metrics-core
 COPY modules ./modules
@@ -21,15 +21,15 @@ RUN mkdir -p modules_bin && \
     if [ -f target/release/libmetrics_immich.so ]; then cp target/release/libmetrics_immich.so modules_bin/; fi
 
 # --- Runtime Stage ---
-FROM rust:1.80-slim-bookworm
+FROM rust:slim-bookworm
 
-# Install runtime dependencies (git is needed for custom modules, zfsutils-linux for ZFS execution, curl for healthcheck)
+# Install runtime dependencies (git is needed for custom modules, curl for healthcheck)
 RUN apt-get update && apt-get install -y git curl && rm -rf /var/lib/apt/lists/*
 
 WORKDIR /app
 
 # Copy the workspace structure and metadata so runtime cargo can compile new plugins
-COPY Cargo.toml ./
+COPY Cargo.toml Cargo.lock ./
 COPY metrics-api ./metrics-api
 COPY modules ./modules
 
