@@ -40,7 +40,6 @@ COPY --from=builder /app/target ./target
 
 # Configure environment
 ENV PORT=3000
-ENV ADMIN_PASSWORD=admin123
 ENV DB_PATH=/data
 
 # Create data directory
