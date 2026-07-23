@@ -7,9 +7,11 @@ on:
   pull_request:
     branches:
       - '**'
+  workflow_dispatch:
 
 env:
   REGISTRY: ghcr.io
+  IMAGE_NAME: ${{ github.repository }}
 
 jobs:
   build-and-push:
@@ -17,15 +19,6 @@ jobs:
     permissions:
       contents: read
       packages: write
-
-    strategy:
-      fail-fast: false
-      matrix:
-        include:
-          - context: ./rust-backend
-            image: ${{ github.repository }}-backend
-          - context: ./web
-            image: ${{ github.repository }}-web
 
     steps:
       - name: Checkout repository
@@ -58,7 +51,7 @@ jobs:
         id: meta
         uses: docker/metadata-action@v5
         with:
-          images: ${{ env.REGISTRY }}/${{ matrix.image }}
+          images: ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}
           tags: |
             # Nutzt immer den oben extrahierten Branch-Namen als Tag
             type=raw,value=${{ steps.extract_branch.outputs.branch }}
@@ -70,13 +63,11 @@ jobs:
       - name: Build and push Docker image
         uses: docker/build-push-action@v6
         with:
-          context: ${{ matrix.context }}
-          # Pusht bei jedem Push. Bei PRs wird standardmäßig nur gebaut.
-          # Wenn du PRs AUCH pushen willst, ändere das zu: push: true
+          context: .
           push: ${{ github.event_name != 'pull_request' }}
           tags: ${{ steps.meta.outputs.tags }}
           labels: ${{ steps.meta.outputs.labels }}
           provenance: false
           sbom: false
-          build-args: |
-            VITE_API_KEY=admin123
+          cache-from: type=gha
+          cache-to: type=gha,mode=max
