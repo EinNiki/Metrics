@@ -1,9 +1,21 @@
-FROM rust:slim-bookworm AS builder
+# --- Chef Stage ---
+FROM lukemathwalker/cargo-chef:latest-rust-slim-bookworm AS chef
+WORKDIR /app
+
+# --- Planner Stage ---
+FROM chef AS planner
+COPY . .
+RUN cargo chef prepare --recipe-path recipe.json
+
+# --- Builder Stage ---
+FROM chef AS builder
 
 # Install build dependencies
 RUN apt-get update && apt-get install -y git build-essential pkg-config libssl-dev && rm -rf /var/lib/apt/lists/*
 
-WORKDIR /app
+# Copy recipe and cook dependencies
+COPY --from=planner /app/recipe.json recipe.json
+RUN cargo chef cook --release --recipe-path recipe.json
 
 # Copy the workspace configuration and files
 COPY Cargo.toml Cargo.lock ./
