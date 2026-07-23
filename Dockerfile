@@ -23,8 +23,8 @@ RUN mkdir -p modules_bin && \
 # --- Runtime Stage ---
 FROM rust:slim-bookworm
 
-# Install runtime dependencies (git is needed for custom modules, curl for healthcheck)
-RUN apt-get update && apt-get install -y git curl && rm -rf /var/lib/apt/lists/*
+# Install runtime dependencies (git/build tools/SSL are needed for runtime plugin compilation, curl for healthcheck)
+RUN apt-get update && apt-get install -y git curl build-essential pkg-config libssl-dev && rm -rf /var/lib/apt/lists/*
 
 WORKDIR /app
 

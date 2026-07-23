@@ -65,6 +65,54 @@
             to { opacity: 1; }
         }
 
+        @keyframes spin {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
+
+        .spinner-small {
+            width: 14px;
+            height: 14px;
+            border: 2px solid rgba(139, 92, 246, 0.2);
+            border-top: 2px solid var(--primary);
+            border-radius: 50%;
+            animation: spin 1s linear infinite;
+            display: inline-block;
+        }
+
+        .spinner-large {
+            width: 24px;
+            height: 24px;
+            border: 3px solid rgba(139, 92, 246, 0.2);
+            border-top: 3px solid var(--primary);
+            border-radius: 50%;
+            animation: spin 1s linear infinite;
+        }
+
+        .compiling-badge {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            background: rgba(139, 92, 246, 0.15);
+            border: 1px solid rgba(139, 92, 246, 0.3);
+            padding: 6px 12px;
+            border-radius: 20px;
+            font-size: 0.85rem;
+            color: var(--primary);
+            box-shadow: 0 0 10px rgba(139, 92, 246, 0.2);
+            animation: pulse-glow 2s infinite;
+        }
+
+        #login-canvas {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            z-index: 0;
+            pointer-events: none;
+        }
+
         /* Glassmorphism Classes */
         .glass-panel {
             background: var(--panel-bg);
@@ -78,14 +126,18 @@
 
         /* App Wrapper */
         #login-container {
+            position: relative;
             display: flex;
             align-items: center;
             justify-content: center;
             min-height: 100vh;
             padding: 20px;
+            overflow: hidden;
         }
 
         .login-card {
+            position: relative;
+            z-index: 1;
             width: 100%;
             max-width: 420px;
             padding: 40px;
@@ -719,6 +771,7 @@
 
     <!-- LOGIN SCREEN -->
     <div id="login-container">
+        <canvas id="login-canvas"></canvas>
         <div class="login-card glass-panel">
             <div class="logo-text">METRICS</div>
             <p style="color: var(--text-muted); margin-bottom: 30px; font-weight: 300;">Loggen Sie sich in Ihr Monitoring-System ein.</p>
@@ -743,18 +796,24 @@
             <div style="display: flex; align-items: center; gap: 30px;">
                 <div class="logo-text" style="font-size: 1.8rem; margin-bottom: 0;">METRICS</div>
                 <div class="nav-links">
-                    <button class="nav-btn active" onclick="switchView('dashboard')">Dashboard</button>
-                    <button class="nav-btn" onclick="switchView('store')">Modul-Store</button>
-                    <button class="nav-btn" onclick="switchView('settings')">Einstellungen</button>
+                    <button class="nav-btn active" onclick="switchView('dashboard', this)">Dashboard</button>
+                    <button class="nav-btn" onclick="switchView('store', this)">Modul-Store</button>
+                    <button class="nav-btn" onclick="switchView('settings', this)">Einstellungen</button>
                 </div>
             </div>
             
-            <div class="user-badge">
-                <span id="user-display">admin</span>
-                <span id="role-display" class="role-indicator admin">Admin</span>
-                <button onclick="logout()" class="icon-btn" title="Abmelden" style="border-radius: 50%;">
-                    <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4M16 17l5-5-5-5M21 12H9"/></svg>
-                </button>
+            <div style="display: flex; align-items: center; gap: 15px;">
+                <div id="global-compiling-indicator" class="compiling-badge" style="display: none;">
+                    <div class="spinner-small"></div>
+                    <span>Plugin wird kompiliert...</span>
+                </div>
+                <div class="user-badge">
+                    <span id="user-display">admin</span>
+                    <span id="role-display" class="role-indicator admin">Admin</span>
+                    <button onclick="logout()" class="icon-btn" title="Abmelden" style="border-radius: 50%;">
+                        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4M16 17l5-5-5-5M21 12H9"/></svg>
+                    </button>
+                </div>
             </div>
         </header>
 
@@ -767,12 +826,15 @@
 
         <!-- STORE VIEW -->
         <section id="view-store" class="view-section">
-            <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 30px;">
+            <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px;">
                 <h2>Verfügbare Module</h2>
                 <button class="btn btn-secondary" onclick="openCustomInstallModal()">
                     <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 5v14M5 12h14"/></svg>
                     Custom URL installieren
                 </button>
+            </div>
+            <div style="margin-bottom: 25px; display: flex; gap: 15px; max-width: 400px;">
+                <input type="text" id="store-search" class="input-field" placeholder="Module durchsuchen..." oninput="filterStore()" style="margin-bottom: 0;">
             </div>
             <div class="store-grid" id="store-list">
                 <!-- Store modules injected dynamically -->
@@ -913,6 +975,10 @@
         let token = localStorage.getItem('token') || '';
         let role = localStorage.getItem('role') || 'viewer';
         let username = localStorage.getItem('username') || '';
+        
+        // Track compiling modules
+        let compilingModules = JSON.parse(localStorage.getItem('compilingModules') || '{}');
+        let loginCanvasAnim = null;
 
         // API Helper
         async function apiCall(endpoint, method = 'GET', body = null) {
@@ -965,10 +1031,95 @@
             }, 4000);
         }
 
+        // Login screen canvas background animation
+        function startLoginAnimation() {
+            const canvas = document.getElementById('login-canvas');
+            if (!canvas) return;
+            const ctx = canvas.getContext('2d');
+            
+            let width = canvas.width = canvas.offsetWidth;
+            let height = canvas.height = canvas.offsetHeight;
+            
+            const handleResize = () => {
+                if (document.getElementById('login-container').style.display !== 'none') {
+                    width = canvas.width = canvas.offsetWidth;
+                    height = canvas.height = canvas.offsetHeight;
+                }
+            };
+            window.removeEventListener('resize', handleResize);
+            window.addEventListener('resize', handleResize);
+            
+            const particles = [];
+            const particleCount = 60;
+            
+            for (let i = 0; i < particleCount; i++) {
+                particles.push({
+                    x: Math.random() * width,
+                    y: Math.random() * height,
+                    vx: (Math.random() - 0.5) * 0.8,
+                    vy: (Math.random() - 0.5) * 0.8,
+                    radius: Math.random() * 2 + 1,
+                    glow: Math.random() * 0.5 + 0.3
+                });
+            }
+            
+            function animate() {
+                if (document.getElementById('login-container').style.display === 'none') {
+                    return;
+                }
+                ctx.clearRect(0, 0, width, height);
+                
+                for (let i = 0; i < particles.length; i++) {
+                    const p = particles[i];
+                    p.x += p.vx;
+                    p.y += p.vy;
+                    
+                    if (p.x < 0 || p.x > width) p.vx = -p.vx;
+                    if (p.y < 0 || p.y > height) p.vy = -p.vy;
+                    
+                    ctx.beginPath();
+                    ctx.arc(p.x, p.y, p.radius, 0, Math.PI * 2);
+                    ctx.fillStyle = `rgba(139, 92, 246, ${p.glow})`;
+                    ctx.shadowBlur = 8;
+                    ctx.shadowColor = '#8b5cf6';
+                    ctx.fill();
+                    ctx.shadowBlur = 0;
+                    
+                    for (let j = i + 1; j < particles.length; j++) {
+                        const p2 = particles[j];
+                        const dx = p.x - p2.x;
+                        const dy = p.y - p2.y;
+                        const dist = Math.sqrt(dx * dx + dy * dy);
+                        
+                        if (dist < 120) {
+                            const alpha = (1 - dist / 120) * 0.15;
+                            ctx.beginPath();
+                            ctx.moveTo(p.x, p.y);
+                            ctx.lineTo(p2.x, p2.y);
+                            ctx.strokeStyle = `rgba(6, 182, 212, ${alpha})`;
+                            ctx.lineWidth = 1;
+                            ctx.stroke();
+                        }
+                    }
+                }
+                loginCanvasAnim = requestAnimationFrame(animate);
+            }
+            animate();
+        }
+
+        function stopLoginAnimation() {
+            if (loginCanvasAnim) {
+                cancelAnimationFrame(loginCanvasAnim);
+                loginCanvasAnim = null;
+            }
+        }
+
         // App Boot
         document.addEventListener('DOMContentLoaded', () => {
             if (token) {
                 showApp();
+            } else {
+                startLoginAnimation();
             }
             
             document.getElementById('login-form').addEventListener('submit', async (e) => {
@@ -1033,26 +1184,28 @@
                 e.preventDefault();
                 const id = document.getElementById('install-id').value;
                 const url = document.getElementById('install-url').value;
-                const btn = document.getElementById('install-submit-btn');
                 
-                btn.disabled = true;
-                btn.innerText = 'Kompiliere... (kann 1-2 Min dauern)';
-                showToast('Kompilierung gestartet. Bitte warten...', 'success');
+                closeCustomInstallModal();
+                compilingModules[id] = true;
+                localStorage.setItem('compilingModules', JSON.stringify(compilingModules));
+                updateCompilingIndicators();
+                switchView('dashboard');
                 
                 try {
                     await apiCall('/api/store/install', 'POST', { id, git_url: url });
-                    closeCustomInstallModal();
                     showToast('Plugin erfolgreich kompiliert und installiert.');
-                    switchView('dashboard');
                 } catch (e) {
                 } finally {
-                    btn.disabled = false;
-                    btn.innerText = 'Kompilieren & Installieren';
+                    delete compilingModules[id];
+                    localStorage.setItem('compilingModules', JSON.stringify(compilingModules));
+                    updateCompilingIndicators();
+                    loadDashboard();
                 }
             });
         });
 
         function showApp() {
+            stopLoginAnimation();
             document.getElementById('login-container').style.display = 'none';
             document.getElementById('app-container').style.display = 'block';
             document.getElementById('user-display').innerText = username;
@@ -1067,6 +1220,7 @@
 
             switchView('dashboard');
             loadSettings();
+            updateCompilingIndicators();
         }
 
         function logout() {
@@ -1076,17 +1230,41 @@
             localStorage.clear();
             document.getElementById('login-container').style.display = 'flex';
             document.getElementById('app-container').style.display = 'none';
+            startLoginAnimation();
         }
 
-        function switchView(viewName) {
+        function switchView(viewName, element = null) {
             document.querySelectorAll('.nav-btn').forEach(btn => btn.classList.remove('active'));
             document.querySelectorAll('.view-section').forEach(sec => sec.classList.remove('active'));
             
-            event.target.classList.add('active');
+            if (element) {
+                element.classList.add('active');
+            } else {
+                const buttons = document.querySelectorAll('.nav-btn');
+                buttons.forEach(btn => {
+                    if (btn.getAttribute('onclick').includes(`'${viewName}'`)) {
+                        btn.classList.add('active');
+                    }
+                });
+            }
+            
             document.getElementById(`view-${viewName}`).classList.add('active');
             
             if (viewName === 'dashboard') loadDashboard();
             if (viewName === 'store') loadStore();
+            if (viewName === 'settings') loadSettings();
+        }
+
+        // Global compiling badge updating
+        function updateCompilingIndicators() {
+            const ids = Object.keys(compilingModules);
+            const globalIndicator = document.getElementById('global-compiling-indicator');
+            if (ids.length > 0) {
+                globalIndicator.style.display = 'flex';
+                globalIndicator.querySelector('span').innerText = `${ids.length} Modul(e) werden kompiliert...`;
+            } else {
+                globalIndicator.style.display = 'none';
+            }
         }
 
         // Dashboard Data Loading
@@ -1094,9 +1272,28 @@
             const list = document.getElementById('modules-list');
             list.innerHTML = `<div style="grid-column: 1/-1; text-align: center; padding: 40px; color: var(--text-muted);">Lade Module...</div>`;
             
+            let compilingCardsHtml = '';
+            const compilingIds = Object.keys(compilingModules);
+            if (compilingIds.length > 0) {
+                compilingCardsHtml = compilingIds.map(id => `
+                    <div class="module-card glass-panel" style="border-color: rgba(139, 92, 246, 0.4); box-shadow: 0 0 15px rgba(139, 92, 246, 0.1);">
+                        <div style="display: flex; align-items: center; gap: 15px; margin-bottom: 15px;">
+                            <div class="spinner-large"></div>
+                            <div>
+                                <h3 style="color: var(--primary);">Kompilierung läuft...</h3>
+                                <div class="module-author">Modul: ${id}</div>
+                            </div>
+                        </div>
+                        <p style="color: var(--text-muted); font-size: 0.9rem;">
+                            Das Modul wird im Docker-Container kompiliert. Bitte wechseln Sie nicht die Seite und laden Sie die App nicht neu.
+                        </p>
+                    </div>
+                `).join('');
+            }
+            
             try {
                 const modules = await apiCall('/api/modules');
-                if (modules.length === 0) {
+                if (modules.length === 0 && compilingIds.length === 0) {
                     list.innerHTML = `
                         <div style="grid-column: 1/-1; text-align: center; padding: 60px;" class="glass-panel">
                             <h3 style="margin-bottom: 10px;">Keine Module installiert</h3>
@@ -1107,7 +1304,7 @@
                     return;
                 }
                 
-                list.innerHTML = modules.map(m => {
+                let modulesHtml = modules.map(m => {
                     const lastRunStr = m.last_run ? new Date(m.last_run).toLocaleString() : 'Nie';
                     const lastErr = m.last_error ? `<span style="color: var(--error); cursor: pointer;" title="${m.last_error}">Fehlerhaft</span>` : 'Keine';
                     
@@ -1157,7 +1354,11 @@
                         </div>
                     `;
                 }).join('');
-            } catch (e) {}
+                
+                list.innerHTML = compilingCardsHtml + modulesHtml;
+            } catch (e) {
+                list.innerHTML = compilingCardsHtml || `<div style="grid-column: 1/-1; text-align: center; padding: 40px; color: var(--error);">Fehler beim Laden der Module.</div>`;
+            }
         }
 
         // Toggle Enabled state
@@ -1233,48 +1434,82 @@
             document.getElementById('install-modal').classList.remove('open');
         }
 
-        // Store Page Loading
+        // Store Page Loading & Search
+        let allStoreModules = [];
+
         async function loadStore() {
             const grid = document.getElementById('store-list');
             grid.innerHTML = `<div style="grid-column: 1/-1; text-align: center; padding: 40px; color: var(--text-muted);">Lade Store...</div>`;
             
             try {
-                const store = await apiCall('/api/store');
-                grid.innerHTML = store.map(m => {
-                    const actionBtn = m.is_installed 
-                        ? `<button class="btn btn-danger" onclick="uninstallModule('${m.id}')" ${role !== 'admin' ? 'disabled' : ''}>Deinstallieren</button>`
-                        : `<button class="btn btn-primary" onclick="installModule('${m.id}')" ${role !== 'admin' ? 'disabled' : ''}>Kompilieren & Installieren</button>`;
-                    
-                    return `
-                        <div class="store-card glass-panel">
-                            <div>
-                                <h3 style="color: white; margin-bottom: 4px;">${m.name}</h3>
-                                <div style="font-size: 0.8rem; color: var(--text-muted); margin-bottom: 12px;">Von ${m.author}</div>
-                                <p class="module-desc">${m.description}</p>
-                                <div class="store-repo">${m.repo_url}</div>
-                            </div>
-                            <div style="margin-top: 20px; display: flex; justify-content: flex-end;">
-                                ${actionBtn}
-                            </div>
-                        </div>
-                    `;
-                }).join('');
+                allStoreModules = await apiCall('/api/store');
+                filterStore();
             } catch (e) {}
         }
 
+        function filterStore() {
+            const query = (document.getElementById('store-search').value || '').toLowerCase().trim();
+            const filtered = allStoreModules.filter(m => 
+                m.name.toLowerCase().includes(query) || 
+                m.description.toLowerCase().includes(query) || 
+                m.author.toLowerCase().includes(query) || 
+                m.id.toLowerCase().includes(query)
+            );
+            renderStoreGrid(filtered);
+        }
+
+        function renderStoreGrid(modules) {
+            const grid = document.getElementById('store-list');
+            if (modules.length === 0) {
+                grid.innerHTML = `<div style="grid-column: 1/-1; text-align: center; padding: 40px; color: var(--text-muted);">Keine Module gefunden.</div>`;
+                return;
+            }
+            
+            grid.innerHTML = modules.map(m => {
+                const isCompiling = compilingModules[m.id];
+                const actionBtn = isCompiling
+                    ? `<button class="btn btn-primary" disabled style="display: flex; align-items: center; gap: 8px;">
+                         <span class="spinner-small"></span> Kompiliere...
+                       </button>`
+                    : (m.is_installed 
+                        ? `<button class="btn btn-danger" onclick="uninstallModule('${m.id}')" ${role !== 'admin' ? 'disabled' : ''}>Deinstallieren</button>`
+                        : `<button class="btn btn-primary" onclick="installModule('${m.id}')" ${role !== 'admin' ? 'disabled' : ''}>Kompilieren & Installieren</button>`);
+                
+                return `
+                    <div class="store-card glass-panel">
+                        <div>
+                            <h3 style="color: white; margin-bottom: 4px;">${m.name}</h3>
+                            <div style="font-size: 0.8rem; color: var(--text-muted); margin-bottom: 12px;">Von ${m.author}</div>
+                            <p class="module-desc">${m.description}</p>
+                            <div class="store-repo">${m.repo_url}</div>
+                        </div>
+                        <div style="margin-top: 20px; display: flex; justify-content: flex-end;">
+                            ${actionBtn}
+                        </div>
+                    </div>
+                `;
+            }).join('');
+        }
+
         async function installModule(id) {
-            const card = event.target.closest('.store-card');
-            const originalBtnHtml = event.target.outerHTML;
-            card.querySelector('button').disabled = true;
-            card.querySelector('button').innerText = 'Kompiliere... (1-2 Min)';
+            compilingModules[id] = true;
+            localStorage.setItem('compilingModules', JSON.stringify(compilingModules));
+            updateCompilingIndicators();
+            filterStore();
             showToast('Kompilierung im Hintergrund gestartet. Bitte warten...', 'success');
             
             try {
                 await apiCall('/api/store/install', 'POST', { id });
                 showToast('Modul erfolgreich kompiliert und installiert.');
-                loadStore();
             } catch (e) {
-                loadStore();
+            } finally {
+                delete compilingModules[id];
+                localStorage.setItem('compilingModules', JSON.stringify(compilingModules));
+                updateCompilingIndicators();
+                
+                const activeView = document.querySelector('.view-section.active').id.replace('view-', '');
+                if (activeView === 'store') filterStore();
+                if (activeView === 'dashboard') loadDashboard();
             }
         }
 
