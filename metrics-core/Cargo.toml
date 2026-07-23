@@ -1,0 +1,21 @@
+[package]
+name = "metrics-core"
+version = "0.1.0"
+edition = "2021"
+
+[dependencies]
+metrics-api = { path = "../metrics-api" }
+axum = { version = "0.7", features = ["ws", "multipart"] }
+tokio = { version = "1", features = ["full"] }
+surrealdb = { version = "3.1.4", features = ["kv-surrealkv"] }
+serde = { version = "1.0", features = ["derive"] }
+serde_json = "1.0"
+chrono = { version = "0.4", features = ["serde"] }
+uuid = { version = "1.0", features = ["v4", "serde"] }
+argon2 = "0.5"
+jsonwebtoken = "9"
+libloading = "0.8"
+tower-http = { version = "0.5", features = ["fs", "cors", "trace"] }
+tracing = "0.1"
+tracing-subscriber = { version = "0.3", features = ["env-filter"] }
+rand = "0.8"

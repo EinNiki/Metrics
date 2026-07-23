@@ -1,0 +1,22 @@
+version: '3.8'
+
+services:
+  metrics:
+    image: ghcr.io/einniki/metrics:latest
+    container_name: metrics
+    ports:
+      - "3000:3000"
+    environment:
+      - PORT=3000
+      - ADMIN_PASSWORD=admin123
+      - DB_PATH=/data
+    volumes:
+      - metrics-data:/data              # SurrealKV database storage
+      - metrics-modules:/app/modules_bin # Persistent compiled module binaries
+      - metrics-config:/app/config      # Configuration files (if needed)
+    restart: unless-stopped
+
+volumes:
+  metrics-data:
+  metrics-modules:
+  metrics-config:

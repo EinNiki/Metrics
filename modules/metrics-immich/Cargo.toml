@@ -1,0 +1,15 @@
+[package]
+name = "metrics-immich"
+version = "0.1.0"
+edition = "2021"
+
+[lib]
+crate-type = ["cdylib"]
+
+[dependencies]
+metrics-api = { path = "../../metrics-api" }
+serde = { version = "1.0", features = ["derive"] }
+serde_json = "1.0"
+chrono = "0.4"
+tokio = { version = "1", features = ["time"] }
+reqwest = { version = "0.12", features = ["json"] }

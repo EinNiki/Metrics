@@ -1,0 +1,8 @@
+/target
+/modules_bin
+/data
+/data_test
+*.skv
+.env
+.env.local
+.vscode

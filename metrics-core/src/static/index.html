@@ -1,0 +1,1335 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Metrics — Modulares Monitoring-System</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;600;800&family=Share+Tech+Mono&display=swap" rel="stylesheet">
+    
+    <style>
+        :root {
+            --bg-color: #0b0f19;
+            --panel-bg: rgba(17, 24, 39, 0.7);
+            --border-color: rgba(255, 255, 255, 0.08);
+            --primary: #8b5cf6;
+            --primary-glow: rgba(139, 92, 246, 0.3);
+            --secondary: #06b6d4;
+            --secondary-glow: rgba(6, 182, 212, 0.3);
+            --text-color: #f3f4f6;
+            --text-muted: #9ca3af;
+            
+            --success: #10b981;
+            --success-glow: rgba(16, 185, 129, 0.4);
+            --error: #ef4444;
+            --error-glow: rgba(239, 68, 68, 0.4);
+            --warning: #f59e0b;
+            --warning-glow: rgba(245, 158, 11, 0.4);
+            
+            --font-main: 'Outfit', sans-serif;
+            --font-mono: 'Share Tech Mono', monospace;
+        }
+
+        * {
+            box-sizing: border-box;
+            margin: 0;
+            padding: 0;
+        }
+
+        body {
+            background-color: var(--bg-color);
+            background-image: 
+                radial-gradient(at 0% 0%, rgba(139, 92, 246, 0.15) 0px, transparent 50%),
+                radial-gradient(at 100% 100%, rgba(6, 182, 212, 0.15) 0px, transparent 50%);
+            background-attachment: fixed;
+            color: var(--text-color);
+            font-family: var(--font-main);
+            min-height: 100vh;
+            overflow-x: hidden;
+        }
+
+        /* Animations */
+        @keyframes pulse-glow {
+            0%, 100% { transform: scale(1); opacity: 0.9; }
+            50% { transform: scale(1.1); opacity: 1; box-shadow: 0 0 12px currentColor; }
+        }
+
+        @keyframes slide-in {
+            from { transform: translateY(20px); opacity: 0; }
+            to { transform: translateY(0); opacity: 1; }
+        }
+
+        @keyframes fade-in {
+            from { opacity: 0; }
+            to { opacity: 1; }
+        }
+
+        /* Glassmorphism Classes */
+        .glass-panel {
+            background: var(--panel-bg);
+            backdrop-filter: blur(12px);
+            -webkit-backdrop-filter: blur(12px);
+            border: 1px solid var(--border-color);
+            border-radius: 16px;
+            box-shadow: 0 8px 32px 0 rgba(0, 0, 0, 0.37);
+            transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+        }
+
+        /* App Wrapper */
+        #login-container {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            min-height: 100vh;
+            padding: 20px;
+        }
+
+        .login-card {
+            width: 100%;
+            max-width: 420px;
+            padding: 40px;
+            text-align: center;
+            animation: slide-in 0.5s ease-out;
+        }
+
+        .logo-text {
+            font-weight: 800;
+            font-size: 2.5rem;
+            letter-spacing: 4px;
+            background: linear-gradient(135deg, var(--primary), var(--secondary));
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            margin-bottom: 30px;
+            text-shadow: 0 4px 20px rgba(139, 92, 246, 0.2);
+        }
+
+        .input-group {
+            margin-bottom: 20px;
+            text-align: left;
+        }
+
+        .input-group label {
+            display: block;
+            font-size: 0.85rem;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+            color: var(--text-muted);
+            margin-bottom: 8px;
+            font-weight: 600;
+        }
+
+        .input-field {
+            width: 100%;
+            background: rgba(255, 255, 255, 0.05);
+            border: 1px solid var(--border-color);
+            border-radius: 8px;
+            padding: 12px 16px;
+            color: var(--text-color);
+            font-family: var(--font-main);
+            font-size: 1rem;
+            outline: none;
+            transition: all 0.3s;
+        }
+
+        .input-field:focus {
+            border-color: var(--primary);
+            box-shadow: 0 0 10px var(--primary-glow);
+            background: rgba(255, 255, 255, 0.08);
+        }
+
+        .btn {
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            padding: 12px 24px;
+            border-radius: 8px;
+            font-family: var(--font-main);
+            font-weight: 600;
+            font-size: 0.95rem;
+            cursor: pointer;
+            transition: all 0.3s;
+            border: none;
+            outline: none;
+            text-decoration: none;
+            gap: 8px;
+        }
+
+        .btn-primary {
+            background: linear-gradient(135deg, var(--primary), #7c3aed);
+            color: white;
+            box-shadow: 0 4px 15px var(--primary-glow);
+        }
+
+        .btn-primary:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 6px 20px rgba(139, 92, 246, 0.5);
+        }
+
+        .btn-secondary {
+            background: rgba(255, 255, 255, 0.08);
+            color: var(--text-color);
+            border: 1px solid var(--border-color);
+        }
+
+        .btn-secondary:hover {
+            background: rgba(255, 255, 255, 0.15);
+            border-color: var(--text-muted);
+        }
+
+        .btn-danger {
+            background: linear-gradient(135deg, var(--error), #dc2626);
+            color: white;
+            box-shadow: 0 4px 15px var(--error-glow);
+        }
+
+        .btn-danger:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 6px 20px rgba(239, 68, 68, 0.5);
+        }
+
+        /* Main Workspace Layout */
+        #app-container {
+            display: none;
+            max-width: 1300px;
+            margin: 0 auto;
+            padding: 30px 20px;
+            animation: fade-in 0.4s ease-out;
+        }
+
+        header {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            margin-bottom: 40px;
+        }
+
+        .nav-links {
+            display: flex;
+            gap: 15px;
+        }
+
+        .nav-btn {
+            background: transparent;
+            color: var(--text-muted);
+            border: none;
+            font-size: 1rem;
+            font-weight: 600;
+            padding: 10px 20px;
+            cursor: pointer;
+            border-radius: 8px;
+            transition: all 0.3s;
+        }
+
+        .nav-btn:hover {
+            color: var(--text-color);
+            background: rgba(255, 255, 255, 0.05);
+        }
+
+        .nav-btn.active {
+            color: white;
+            background: var(--primary);
+            box-shadow: 0 4px 12px var(--primary-glow);
+        }
+
+        .user-badge {
+            display: flex;
+            align-items: center;
+            gap: 15px;
+            background: rgba(255, 255, 255, 0.05);
+            border: 1px solid var(--border-color);
+            padding: 8px 16px;
+            border-radius: 30px;
+        }
+
+        .role-indicator {
+            font-size: 0.75rem;
+            text-transform: uppercase;
+            font-weight: 800;
+            letter-spacing: 1px;
+            padding: 2px 8px;
+            border-radius: 4px;
+            background: var(--secondary);
+            color: var(--bg-color);
+        }
+
+        .role-indicator.admin {
+            background: var(--primary);
+            color: white;
+        }
+
+        /* Views */
+        .view-section {
+            display: none;
+        }
+
+        .view-section.active {
+            display: block;
+            animation: slide-in 0.4s ease-out;
+        }
+
+        /* Grid layouts */
+        .dashboard-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(360px, 1fr));
+            gap: 25px;
+        }
+
+        .module-card {
+            padding: 24px;
+            display: flex;
+            flex-direction: column;
+            justify-content: space-between;
+            min-height: 220px;
+        }
+
+        .module-card:hover {
+            transform: translateY(-5px);
+            border-color: rgba(139, 92, 246, 0.4);
+            box-shadow: 0 10px 30px rgba(139, 92, 246, 0.1);
+        }
+
+        .module-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: flex-start;
+            margin-bottom: 15px;
+        }
+
+        .module-title-wrap h3 {
+            font-size: 1.25rem;
+            font-weight: 600;
+            color: white;
+        }
+
+        .module-author {
+            font-size: 0.8rem;
+            color: var(--text-muted);
+            margin-top: 2px;
+        }
+
+        .status-badge {
+            display: inline-flex;
+            align-items: center;
+            gap: 6px;
+            font-size: 0.75rem;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+            font-weight: bold;
+            padding: 4px 10px;
+            border-radius: 30px;
+            border: 1px solid transparent;
+        }
+
+        .status-badge .dot {
+            width: 8px;
+            height: 8px;
+            border-radius: 50%;
+            display: inline-block;
+        }
+
+        .status-badge.running {
+            background: rgba(16, 185, 129, 0.1);
+            color: var(--success);
+            border-color: rgba(16, 185, 129, 0.2);
+        }
+        .status-badge.running .dot {
+            background-color: var(--success);
+            color: var(--success-glow);
+            animation: pulse-glow 1.5s infinite;
+        }
+
+        .status-badge.paused {
+            background: rgba(245, 158, 11, 0.1);
+            color: var(--warning);
+            border-color: rgba(245, 158, 11, 0.2);
+        }
+        .status-badge.paused .dot {
+            background-color: var(--warning);
+        }
+
+        .status-badge.error {
+            background: rgba(239, 68, 68, 0.1);
+            color: var(--error);
+            border-color: rgba(239, 68, 68, 0.2);
+        }
+        .status-badge.error .dot {
+            background-color: var(--error);
+            color: var(--error-glow);
+            animation: pulse-glow 1.5s infinite;
+        }
+
+        .status-badge.installed {
+            background: rgba(156, 163, 175, 0.1);
+            color: var(--text-muted);
+            border-color: rgba(156, 163, 175, 0.2);
+        }
+        .status-badge.installed .dot {
+            background-color: var(--text-muted);
+        }
+
+        .module-desc {
+            font-size: 0.9rem;
+            color: var(--text-muted);
+            line-height: 1.5;
+            margin-bottom: 20px;
+            flex-grow: 1;
+        }
+
+        .module-stats {
+            background: rgba(255, 255, 255, 0.02);
+            border: 1px solid var(--border-color);
+            border-radius: 8px;
+            padding: 10px;
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 10px;
+            font-size: 0.8rem;
+            margin-bottom: 20px;
+        }
+
+        .stat-item span {
+            display: block;
+            color: var(--text-muted);
+            font-size: 0.7rem;
+            text-transform: uppercase;
+        }
+
+        .stat-item strong {
+            color: white;
+            font-family: var(--font-mono);
+        }
+
+        .module-actions {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        .action-btns {
+            display: flex;
+            gap: 8px;
+        }
+
+        .icon-btn {
+            background: rgba(255, 255, 255, 0.05);
+            border: 1px solid var(--border-color);
+            color: var(--text-color);
+            border-radius: 6px;
+            width: 36px;
+            height: 36px;
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            cursor: pointer;
+            transition: all 0.3s;
+        }
+
+        .icon-btn:hover {
+            background: rgba(255, 255, 255, 0.15);
+            color: white;
+        }
+
+        /* Toggle Switch */
+        .switch {
+            position: relative;
+            display: inline-block;
+            width: 48px;
+            height: 24px;
+        }
+
+        .switch input { 
+            opacity: 0;
+            width: 0;
+            height: 0;
+        }
+
+        .slider {
+            position: absolute;
+            cursor: pointer;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background-color: rgba(255, 255, 255, 0.1);
+            transition: .4s;
+            border-radius: 24px;
+            border: 1px solid var(--border-color);
+        }
+
+        .slider:before {
+            position: absolute;
+            content: "";
+            height: 16px;
+            width: 16px;
+            left: 3px;
+            bottom: 3px;
+            background-color: var(--text-muted);
+            transition: .4s;
+            border-radius: 50%;
+        }
+
+        input:checked + .slider {
+            background-color: var(--primary);
+            box-shadow: 0 0 8px var(--primary-glow);
+        }
+
+        input:checked + .slider:before {
+            transform: translateX(24px);
+            background-color: white;
+        }
+
+        /* Settings forms */
+        .settings-layout {
+            display: grid;
+            grid-template-columns: 280px 1fr;
+            gap: 40px;
+        }
+
+        @media (max-width: 768px) {
+            .settings-layout {
+                grid-template-columns: 1fr;
+            }
+        }
+
+        .settings-nav {
+            display: flex;
+            flex-direction: column;
+            gap: 10px;
+        }
+
+        .settings-nav-btn {
+            text-align: left;
+            padding: 12px 16px;
+            background: transparent;
+            color: var(--text-muted);
+            border: 1px solid transparent;
+            border-radius: 8px;
+            cursor: pointer;
+            font-weight: 600;
+            transition: all 0.3s;
+        }
+
+        .settings-nav-btn:hover {
+            color: var(--text-color);
+            background: rgba(255, 255, 255, 0.05);
+        }
+
+        .settings-nav-btn.active {
+            color: white;
+            background: rgba(255, 255, 255, 0.05);
+            border-color: var(--border-color);
+            box-shadow: 0 4px 10px rgba(0, 0, 0, 0.2);
+        }
+
+        .settings-panel {
+            display: none;
+            padding: 30px;
+            animation: fade-in 0.3s;
+        }
+
+        .settings-panel.active {
+            display: block;
+        }
+
+        .settings-panel h2 {
+            margin-bottom: 25px;
+            font-weight: 600;
+        }
+
+        /* Store List */
+        .store-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(360px, 1fr));
+            gap: 25px;
+        }
+
+        .store-card {
+            padding: 24px;
+            display: flex;
+            flex-direction: column;
+            justify-content: space-between;
+            min-height: 200px;
+        }
+
+        .store-repo {
+            font-family: var(--font-mono);
+            font-size: 0.8rem;
+            color: var(--secondary);
+            margin-top: 10px;
+        }
+
+        /* Log Drawer Overlay */
+        .drawer-overlay {
+            position: fixed;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background: rgba(0, 0, 0, 0.6);
+            backdrop-filter: blur(4px);
+            z-index: 100;
+            display: none;
+            animation: fade-in 0.3s;
+        }
+
+        .drawer {
+            position: fixed;
+            top: 0;
+            right: 0;
+            bottom: 0;
+            width: 100%;
+            max-width: 600px;
+            background: #0d111a;
+            border-left: 1px solid var(--border-color);
+            z-index: 101;
+            transform: translateX(100%);
+            transition: transform 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+            display: flex;
+            flex-direction: column;
+            box-shadow: -10px 0 30px rgba(0,0,0,0.5);
+        }
+
+        .drawer.open {
+            transform: translateX(0);
+        }
+
+        .drawer-header {
+            padding: 20px;
+            border-bottom: 1px solid var(--border-color);
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        .drawer-content {
+            padding: 20px;
+            flex-grow: 1;
+            overflow-y: auto;
+            font-family: var(--font-mono);
+            font-size: 0.85rem;
+            background: #07090e;
+            color: #a7b5c8;
+        }
+
+        .log-line {
+            margin-bottom: 8px;
+            line-height: 1.4;
+            display: flex;
+            gap: 12px;
+        }
+
+        .log-time {
+            color: var(--text-muted);
+            flex-shrink: 0;
+        }
+
+        .log-level {
+            font-weight: bold;
+            flex-shrink: 0;
+        }
+
+        .log-level.info { color: var(--secondary); }
+        .log-level.error { color: var(--error); }
+        .log-level.warn { color: var(--warning); }
+
+        /* Modal dialogs */
+        .modal-overlay {
+            position: fixed;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background: rgba(0, 0, 0, 0.7);
+            backdrop-filter: blur(8px);
+            z-index: 200;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            opacity: 0;
+            pointer-events: none;
+            transition: opacity 0.3s;
+        }
+
+        .modal-overlay.open {
+            opacity: 1;
+            pointer-events: auto;
+        }
+
+        .modal-content {
+            width: 100%;
+            max-width: 500px;
+            padding: 30px;
+            animation: slide-in 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+        }
+
+        .modal-header {
+            margin-bottom: 20px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        .modal-footer {
+            margin-top: 30px;
+            display: flex;
+            justify-content: flex-end;
+            gap: 12px;
+        }
+
+        /* Toast Notifications */
+        #toast-container {
+            position: fixed;
+            bottom: 20px;
+            right: 20px;
+            z-index: 1000;
+            display: flex;
+            flex-direction: column;
+            gap: 10px;
+        }
+
+        .toast {
+            min-width: 250px;
+            padding: 16px 20px;
+            border-radius: 8px;
+            background: var(--panel-bg);
+            backdrop-filter: blur(10px);
+            border: 1px solid var(--border-color);
+            color: white;
+            box-shadow: 0 8px 16px rgba(0,0,0,0.3);
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            animation: slide-in 0.3s ease-out;
+        }
+
+        .toast.success {
+            border-left: 4px solid var(--success);
+        }
+
+        .toast.error {
+            border-left: 4px solid var(--error);
+        }
+    </style>
+</head>
+<body>
+
+    <!-- TOAST NOTIFICATION CONTAINER -->
+    <div id="toast-container"></div>
+
+    <!-- LOGIN SCREEN -->
+    <div id="login-container">
+        <div class="login-card glass-panel">
+            <div class="logo-text">METRICS</div>
+            <p style="color: var(--text-muted); margin-bottom: 30px; font-weight: 300;">Loggen Sie sich in Ihr Monitoring-System ein.</p>
+            
+            <form id="login-form">
+                <div class="input-group">
+                    <label for="username">Benutzername</label>
+                    <input type="text" id="username" class="input-field" required placeholder="admin">
+                </div>
+                <div class="input-group">
+                    <label for="password">Passwort</label>
+                    <input type="password" id="password" class="input-field" required placeholder="••••••••">
+                </div>
+                <button type="submit" class="btn btn-primary" style="width: 100%; margin-top: 10px;">Einloggen</button>
+            </form>
+        </div>
+    </div>
+
+    <!-- WORKSPACE / DASHBOARD INTERFACE -->
+    <div id="app-container">
+        <header>
+            <div style="display: flex; align-items: center; gap: 30px;">
+                <div class="logo-text" style="font-size: 1.8rem; margin-bottom: 0;">METRICS</div>
+                <div class="nav-links">
+                    <button class="nav-btn active" onclick="switchView('dashboard')">Dashboard</button>
+                    <button class="nav-btn" onclick="switchView('store')">Modul-Store</button>
+                    <button class="nav-btn" onclick="switchView('settings')">Einstellungen</button>
+                </div>
+            </div>
+            
+            <div class="user-badge">
+                <span id="user-display">admin</span>
+                <span id="role-display" class="role-indicator admin">Admin</span>
+                <button onclick="logout()" class="icon-btn" title="Abmelden" style="border-radius: 50%;">
+                    <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4M16 17l5-5-5-5M21 12H9"/></svg>
+                </button>
+            </div>
+        </header>
+
+        <!-- DASHBOARD VIEW -->
+        <section id="view-dashboard" class="view-section active">
+            <div class="dashboard-grid" id="modules-list">
+                <!-- Modules will be injected dynamically -->
+            </div>
+        </section>
+
+        <!-- STORE VIEW -->
+        <section id="view-store" class="view-section">
+            <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 30px;">
+                <h2>Verfügbare Module</h2>
+                <button class="btn btn-secondary" onclick="openCustomInstallModal()">
+                    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 5v14M5 12h14"/></svg>
+                    Custom URL installieren
+                </button>
+            </div>
+            <div class="store-grid" id="store-list">
+                <!-- Store modules injected dynamically -->
+            </div>
+        </section>
+
+        <!-- SETTINGS VIEW -->
+        <section id="view-settings" class="view-section">
+            <div class="settings-layout">
+                <div class="settings-nav">
+                    <button class="settings-nav-btn active" onclick="switchSettingsPanel('db-backend')">Datenbank-Backend</button>
+                </div>
+                
+                <div class="glass-panel" style="padding: 0;">
+                    <!-- Database Backend Settings Panel -->
+                    <div id="panel-db-backend" class="settings-panel active">
+                        <h2>Verbindung konfigurieren</h2>
+                        <form id="settings-db-form">
+                            <div class="input-group">
+                                <label for="db-backend-type">Datenbank-Typ</label>
+                                <select id="db-backend-type" class="input-field" onchange="toggleDbFields()">
+                                    <option value="InfluxDb">InfluxDB (v2 API)</option>
+                                    <option value="PrometheusPushgateway">Prometheus (Pushgateway)</option>
+                                </select>
+                            </div>
+                            
+                            <div class="input-group">
+                                <label for="db-url">Server URL</label>
+                                <input type="text" id="db-url" class="input-field" placeholder="http://localhost:8086" required>
+                            </div>
+                            
+                            <!-- InfluxDB Specific Fields -->
+                            <div id="influx-fields">
+                                <div class="input-group">
+                                    <label for="db-token">API Token</label>
+                                    <input type="password" id="db-token" class="input-field" placeholder="MeinSuperToken...">
+                                </div>
+                                <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 20px;">
+                                    <div class="input-group">
+                                        <label for="db-org">Organisation</label>
+                                        <input type="text" id="db-org" class="input-field" placeholder="homelab">
+                                    </div>
+                                    <div class="input-group">
+                                        <label for="db-bucket">Bucket</label>
+                                        <input type="text" id="db-bucket" class="input-field" placeholder="metrics">
+                                    </div>
+                                </div>
+                            </div>
+                            
+                            <!-- Prometheus Specific Fields -->
+                            <div id="prometheus-fields" style="display: none;">
+                                <div class="input-group">
+                                    <label for="db-job">Job Name</label>
+                                    <input type="text" id="db-job" class="input-field" placeholder="metrics_core">
+                                </div>
+                                <div class="input-group">
+                                    <label for="db-prom-token">Auth Token (Optional)</label>
+                                    <input type="password" id="db-prom-token" class="input-field" placeholder="Bearer Token...">
+                                </div>
+                            </div>
+
+                            <button type="submit" class="btn btn-primary" style="margin-top: 10px;">Einstellungen speichern</button>
+                        </form>
+                    </div>
+                </div>
+            </div>
+        </section>
+    </div>
+
+    <!-- LOG DRAWER -->
+    <div class="drawer-overlay" id="drawer-overlay" onclick="closeLogDrawer()"></div>
+    <div class="drawer" id="log-drawer">
+        <div class="drawer-header">
+            <h3 id="drawer-title" style="color: white;">Modul-Logs</h3>
+            <button onclick="closeLogDrawer()" class="icon-btn" style="border-radius: 50%;">
+                <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M18 6L6 18M6 6l12 12"/></svg>
+            </button>
+        </div>
+        <div class="drawer-content" id="drawer-logs">
+            <!-- Logs will be loaded dynamically -->
+        </div>
+    </div>
+
+    <!-- CONFIGURATION EDIT MODAL -->
+    <div class="modal-overlay" id="config-modal">
+        <div class="modal-content glass-panel">
+            <div class="modal-header">
+                <h3 id="config-modal-title" style="color: white;">Modul konfigurieren</h3>
+                <button onclick="closeConfigModal()" class="icon-btn" style="border-radius: 50%;">
+                    <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M18 6L6 18M6 6l12 12"/></svg>
+                </button>
+            </div>
+            <form id="config-form">
+                <input type="hidden" id="config-module-id">
+                <div class="input-group">
+                    <label for="config-interval">Intervall (Sekunden)</label>
+                    <input type="number" id="config-interval" class="input-field" min="5" required>
+                </div>
+                <div class="input-group">
+                    <label for="config-body">Konfiguration (JSON)</label>
+                    <textarea id="config-body" class="input-field" rows="8" style="font-family: var(--font-mono); font-size: 0.9rem; resize: vertical;"></textarea>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" onclick="closeConfigModal()">Abbrechen</button>
+                    <button type="submit" class="btn btn-primary">Speichern</button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <!-- CUSTOM GIT INSTALL MODAL -->
+    <div class="modal-overlay" id="install-modal">
+        <div class="modal-content glass-panel">
+            <div class="modal-header">
+                <h3 style="color: white;">Custom Modul installieren</h3>
+                <button onclick="closeCustomInstallModal()" class="icon-btn" style="border-radius: 50%;">
+                    <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M18 6L6 18M6 6l12 12"/></svg>
+                </button>
+            </div>
+            <form id="install-form">
+                <div class="input-group">
+                    <label for="install-id">Plugin-ID (Eindeutiger Name)</label>
+                    <input type="text" id="install-id" class="input-field" placeholder="metrics-custom-name" required>
+                </div>
+                <div class="input-group">
+                    <label for="install-url">Git Repository URL</label>
+                    <input type="url" id="install-url" class="input-field" placeholder="https://github.com/developer/metrics-myplugin.git" required>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" onclick="closeCustomInstallModal()">Abbrechen</button>
+                    <button type="submit" class="btn btn-primary" id="install-submit-btn">Kompilieren & Installieren</button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <script>
+        let token = localStorage.getItem('token') || '';
+        let role = localStorage.getItem('role') || 'viewer';
+        let username = localStorage.getItem('username') || '';
+
+        // API Helper
+        async function apiCall(endpoint, method = 'GET', body = null) {
+            const headers = {
+                'Content-Type': 'application/json'
+            };
+            if (token) {
+                headers['Authorization'] = `Bearer ${token}`;
+            }
+            
+            const config = { method, headers };
+            if (body) {
+                config.body = JSON.stringify(body);
+            }
+            
+            try {
+                const res = await fetch(endpoint, config);
+                if (res.status === 413 || res.status === 401) {
+                    logout();
+                    showToast('Nicht autorisiert oder Session abgelaufen.', 'error');
+                    throw new Error('Unauthorized');
+                }
+                const data = await res.json();
+                if (!res.ok) {
+                    throw new Error(data.error || 'Serverfehler');
+                }
+                return data;
+            } catch (err) {
+                if (err.message !== 'Unauthorized') {
+                    showToast(err.message, 'error');
+                }
+                throw err;
+            }
+        }
+
+        // Show Toast
+        function showToast(message, type = 'success') {
+            const container = document.getElementById('toast-container');
+            const toast = document.createElement('div');
+            toast.className = `toast ${type}`;
+            toast.innerHTML = `
+                <span class="toast-dot" style="background: ${type === 'success' ? 'var(--success)' : 'var(--error)'}; width: 8px; height: 8px; border-radius: 50%;"></span>
+                <span>${message}</span>
+            `;
+            container.appendChild(toast);
+            setTimeout(() => {
+                toast.style.opacity = '0';
+                toast.style.transform = 'translateY(10px)';
+                setTimeout(() => toast.remove(), 300);
+            }, 4000);
+        }
+
+        // App Boot
+        document.addEventListener('DOMContentLoaded', () => {
+            if (token) {
+                showApp();
+            }
+            
+            document.getElementById('login-form').addEventListener('submit', async (e) => {
+                e.preventDefault();
+                const u = document.getElementById('username').value;
+                const p = document.getElementById('password').value;
+                try {
+                    const data = await apiCall('/api/auth/login', 'POST', { username: u, password: p });
+                    token = data.token;
+                    role = data.role;
+                    username = u;
+                    localStorage.setItem('token', token);
+                    localStorage.setItem('role', role);
+                    localStorage.setItem('username', username);
+                    showToast('Erfolgreich angemeldet.');
+                    showApp();
+                } catch (e) {}
+            });
+
+            document.getElementById('settings-db-form').addEventListener('submit', async (e) => {
+                e.preventDefault();
+                const type = document.getElementById('db-backend-type').value;
+                const url = document.getElementById('db-url').value;
+                
+                let body = { type };
+                if (type === 'InfluxDb') {
+                    body.url = url;
+                    body.token = document.getElementById('db-token').value;
+                    body.org = document.getElementById('db-org').value;
+                    body.bucket = document.getElementById('db-bucket').value;
+                } else {
+                    body.url = url;
+                    body.job = document.getElementById('db-job').value;
+                    const promToken = document.getElementById('db-prom-token').value;
+                    body.token = promToken ? promToken : null;
+                }
+                
+                try {
+                    await apiCall('/api/settings', 'POST', body);
+                    showToast('Datenbank-Einstellungen gespeichert.');
+                } catch (e) {}
+            });
+
+            document.getElementById('config-form').addEventListener('submit', async (e) => {
+                e.preventDefault();
+                const id = document.getElementById('config-module-id').value;
+                const interval = parseInt(document.getElementById('config-interval').value);
+                const configStr = document.getElementById('config-body').value;
+                
+                try {
+                    await apiCall(`/api/modules/${id}/config`, 'POST', {
+                        interval_secs: interval,
+                        config: configStr
+                    });
+                    closeConfigModal();
+                    showToast('Modul-Konfiguration gespeichert.');
+                    loadDashboard();
+                } catch (e) {}
+            });
+
+            document.getElementById('install-form').addEventListener('submit', async (e) => {
+                e.preventDefault();
+                const id = document.getElementById('install-id').value;
+                const url = document.getElementById('install-url').value;
+                const btn = document.getElementById('install-submit-btn');
+                
+                btn.disabled = true;
+                btn.innerText = 'Kompiliere... (kann 1-2 Min dauern)';
+                showToast('Kompilierung gestartet. Bitte warten...', 'success');
+                
+                try {
+                    await apiCall('/api/store/install', 'POST', { id, git_url: url });
+                    closeCustomInstallModal();
+                    showToast('Plugin erfolgreich kompiliert und installiert.');
+                    switchView('dashboard');
+                } catch (e) {
+                } finally {
+                    btn.disabled = false;
+                    btn.innerText = 'Kompilieren & Installieren';
+                }
+            });
+        });
+
+        function showApp() {
+            document.getElementById('login-container').style.display = 'none';
+            document.getElementById('app-container').style.display = 'block';
+            document.getElementById('user-display').innerText = username;
+            const rBadge = document.getElementById('role-display');
+            rBadge.innerText = role === 'admin' ? 'Admin' : 'Viewer';
+            rBadge.className = `role-indicator ${role}`;
+            
+            // If Viewer, hide Admin actions
+            if (role !== 'admin') {
+                document.querySelectorAll('button[type="submit"]').forEach(b => b.style.display = 'none');
+            }
+
+            switchView('dashboard');
+            loadSettings();
+        }
+
+        function logout() {
+            token = '';
+            role = 'viewer';
+            username = '';
+            localStorage.clear();
+            document.getElementById('login-container').style.display = 'flex';
+            document.getElementById('app-container').style.display = 'none';
+        }
+
+        function switchView(viewName) {
+            document.querySelectorAll('.nav-btn').forEach(btn => btn.classList.remove('active'));
+            document.querySelectorAll('.view-section').forEach(sec => sec.classList.remove('active'));
+            
+            event.target.classList.add('active');
+            document.getElementById(`view-${viewName}`).classList.add('active');
+            
+            if (viewName === 'dashboard') loadDashboard();
+            if (viewName === 'store') loadStore();
+        }
+
+        // Dashboard Data Loading
+        async function loadDashboard() {
+            const list = document.getElementById('modules-list');
+            list.innerHTML = `<div style="grid-column: 1/-1; text-align: center; padding: 40px; color: var(--text-muted);">Lade Module...</div>`;
+            
+            try {
+                const modules = await apiCall('/api/modules');
+                if (modules.length === 0) {
+                    list.innerHTML = `
+                        <div style="grid-column: 1/-1; text-align: center; padding: 60px;" class="glass-panel">
+                            <h3 style="margin-bottom: 10px;">Keine Module installiert</h3>
+                            <p style="color: var(--text-muted); margin-bottom: 20px;">Installieren Sie Module aus dem App-Store.</p>
+                            <button class="btn btn-primary" onclick="switchView('store')">Zum Store</button>
+                        </div>
+                    `;
+                    return;
+                }
+                
+                list.innerHTML = modules.map(m => {
+                    const lastRunStr = m.last_run ? new Date(m.last_run).toLocaleString() : 'Nie';
+                    const lastErr = m.last_error ? `<span style="color: var(--error); cursor: pointer;" title="${m.last_error}">Fehlerhaft</span>` : 'Keine';
+                    
+                    return `
+                        <div class="module-card glass-panel">
+                            <div>
+                                <div class="module-header">
+                                    <div class="module-title-wrap">
+                                        <h3>${m.name}</h3>
+                                        <div class="module-author">Version ${m.version} | Von ${m.author}</div>
+                                    </div>
+                                    <span class="status-badge ${m.status}">
+                                        <span class="dot"></span>${m.status === 'running' ? 'Aktiv' : m.status === 'error' ? 'Fehler' : 'Pause'}
+                                    </span>
+                                </div>
+                                <p class="module-desc">${m.description}</p>
+                            </div>
+                            
+                            <div>
+                                <div class="module-stats">
+                                    <div class="stat-item">
+                                        <span>Intervall</span>
+                                        <strong>${m.interval_secs}s</strong>
+                                    </div>
+                                    <div class="stat-item">
+                                        <span>Letzter Run</span>
+                                        <strong>${lastRunStr}</strong>
+                                    </div>
+                                </div>
+                                
+                                <div class="module-actions">
+                                    <label class="switch">
+                                        <input type="checkbox" ${m.enabled ? 'checked' : ''} onchange="toggleModule('${m.id}', this.checked)" ${role !== 'admin' ? 'disabled' : ''}>
+                                        <span class="slider"></span>
+                                    </label>
+                                    
+                                    <div class="action-btns">
+                                        <button class="icon-btn" onclick="openConfigModal('${m.id}', ${m.interval_secs}, \`${m.config.replace(/`/g, '\\`').replace(/\\/g, '\\\\')}\`)" title="Konfigurieren" ${role !== 'admin' ? 'disabled' : ''}>
+                                            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12.22 2h-.44a2 2 0 0 0-2 2v.18a2 2 0 0 1-1 1.73l-.43.25a2 2 0 0 1-2 0l-.15-.08a2 2 0 0 0-2.73.73l-.22.38a2 2 0 0 0 .73 2.73l.15.1a2 2 0 0 1 1 1.72v.51a2 2 0 0 1-1 1.74l-.15.09a2 2 0 0 0-.73 2.73l.22.38a2 2 0 0 0 2.73.73l.15-.08a2 2 0 0 1 2 0l.43.25a2 2 0 0 1 1 1.73V20a2 2 0 0 0 2 2h.44a2 2 0 0 0 2-2v-.18a2 2 0 0 1 1-1.73l.43-.25a2 2 0 0 1 2 0l.15.08a2 2 0 0 0 2.73-.73l.22-.39a2 2 0 0 0-.73-2.73l-.15-.08a2 2 0 0 1-1-1.74v-.5a2 2 0 0 1 1-1.74l.15-.1a2 2 0 0 0 .73-2.73l-.22-.38a2 2 0 0 0-2.73-.73l-.15.08a2 2 0 0 1-2 0l-.43-.25a2 2 0 0 1-1-1.73V4a2 2 0 0 0-2-2z"/><circle cx="12" cy="12" r="3"/></svg>
+                                        </button>
+                                        <button class="icon-btn" onclick="openLogDrawer('${m.id}')" title="Logs anzeigen">
+                                            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/><line x1="16" y1="13" x2="8" y2="13"/><line x1="16" y1="17" x2="8" y2="17"/><polyline points="10 9 9 9 8 9"/></svg>
+                                        </button>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    `;
+                }).join('');
+            } catch (e) {}
+        }
+
+        // Toggle Enabled state
+        async function toggleModule(id, enabled) {
+            try {
+                await apiCall(`/api/modules/${id}/toggle`, 'POST', { enabled });
+                showToast(`Modul ${enabled ? 'aktiviert' : 'deaktiviert'}.`);
+                loadDashboard();
+            } catch (e) {}
+        }
+
+        // Configuration Modal Management
+        function openConfigModal(id, interval, configStr) {
+            document.getElementById('config-module-id').value = id;
+            document.getElementById('config-interval').value = interval;
+            document.getElementById('config-body').value = configStr;
+            document.getElementById('config-modal-title').innerText = `Modul konfigurieren: ${id}`;
+            document.getElementById('config-modal').classList.add('open');
+        }
+
+        function closeConfigModal() {
+            document.getElementById('config-modal').classList.remove('open');
+        }
+
+        // Log Drawer Management
+        let logIntervalId = null;
+
+        async function openLogDrawer(id) {
+            document.getElementById('drawer-title').innerText = `Live Logs: ${id}`;
+            document.getElementById('drawer-overlay').style.display = 'block';
+            document.getElementById('log-drawer').classList.add('open');
+            
+            async function fetchLogs() {
+                try {
+                    const logs = await apiCall(`/api/modules/${id}/logs`);
+                    const container = document.getElementById('drawer-logs');
+                    if (logs.length === 0) {
+                        container.innerHTML = `<div style="text-align: center; color: var(--text-muted); padding-top: 30px;">Keine Logs vorhanden.</div>`;
+                        return;
+                    }
+                    container.innerHTML = logs.map(l => {
+                        const t = new Date(l.timestamp).toLocaleTimeString();
+                        return `
+                            <div class="log-line">
+                                <span class="log-time">[${t}]</span>
+                                <span class="log-level ${l.level.toLowerCase()}">${l.level.toUpperCase()}</span>
+                                <span class="log-msg">${l.message}</span>
+                            </div>
+                        `;
+                    }).join('');
+                } catch(e) {}
+            }
+            
+            await fetchLogs();
+            logIntervalId = setInterval(fetchLogs, 3000);
+        }
+
+        function closeLogDrawer() {
+            if (logIntervalId) {
+                clearInterval(logIntervalId);
+                logIntervalId = null;
+            }
+            document.getElementById('drawer-overlay').style.display = 'none';
+            document.getElementById('log-drawer').classList.remove('open');
+        }
+
+        // Custom Install Modal Management
+        function openCustomInstallModal() {
+            document.getElementById('install-modal').classList.add('open');
+        }
+
+        function closeCustomInstallModal() {
+            document.getElementById('install-modal').classList.remove('open');
+        }
+
+        // Store Page Loading
+        async function loadStore() {
+            const grid = document.getElementById('store-list');
+            grid.innerHTML = `<div style="grid-column: 1/-1; text-align: center; padding: 40px; color: var(--text-muted);">Lade Store...</div>`;
+            
+            try {
+                const store = await apiCall('/api/store');
+                grid.innerHTML = store.map(m => {
+                    const actionBtn = m.is_installed 
+                        ? `<button class="btn btn-danger" onclick="uninstallModule('${m.id}')" ${role !== 'admin' ? 'disabled' : ''}>Deinstallieren</button>`
+                        : `<button class="btn btn-primary" onclick="installModule('${m.id}')" ${role !== 'admin' ? 'disabled' : ''}>Kompilieren & Installieren</button>`;
+                    
+                    return `
+                        <div class="store-card glass-panel">
+                            <div>
+                                <h3 style="color: white; margin-bottom: 4px;">${m.name}</h3>
+                                <div style="font-size: 0.8rem; color: var(--text-muted); margin-bottom: 12px;">Von ${m.author}</div>
+                                <p class="module-desc">${m.description}</p>
+                                <div class="store-repo">${m.repo_url}</div>
+                            </div>
+                            <div style="margin-top: 20px; display: flex; justify-content: flex-end;">
+                                ${actionBtn}
+                            </div>
+                        </div>
+                    `;
+                }).join('');
+            } catch (e) {}
+        }
+
+        async function installModule(id) {
+            const card = event.target.closest('.store-card');
+            const originalBtnHtml = event.target.outerHTML;
+            card.querySelector('button').disabled = true;
+            card.querySelector('button').innerText = 'Kompiliere... (1-2 Min)';
+            showToast('Kompilierung im Hintergrund gestartet. Bitte warten...', 'success');
+            
+            try {
+                await apiCall('/api/store/install', 'POST', { id });
+                showToast('Modul erfolgreich kompiliert und installiert.');
+                loadStore();
+            } catch (e) {
+                loadStore();
+            }
+        }
+
+        async function uninstallModule(id) {
+            if (!confirm(`Sind Sie sicher, dass Sie das Modul '${id}' deinstallieren möchten?`)) {
+                return;
+            }
+            try {
+                await apiCall('/api/store/uninstall', 'POST', { id });
+                showToast('Modul deinstalliert.');
+                loadStore();
+            } catch (e) {}
+        }
+
+        // Settings Page Config
+        async function loadSettings() {
+            try {
+                const config = await apiCall('/api/settings');
+                if (config) {
+                    document.getElementById('db-backend-type').value = config.type;
+                    document.getElementById('db-url').value = config.url;
+                    
+                    if (config.type === 'InfluxDb') {
+                        document.getElementById('db-token').value = config.token;
+                        document.getElementById('db-org').value = config.org;
+                        document.getElementById('db-bucket').value = config.bucket;
+                    } else {
+                        document.getElementById('db-job').value = config.job;
+                        document.getElementById('db-prom-token').value = config.token || '';
+                    }
+                }
+                toggleDbFields();
+            } catch (e) {}
+        }
+
+        function toggleDbFields() {
+            const type = document.getElementById('db-backend-type').value;
+            if (type === 'InfluxDb') {
+                document.getElementById('influx-fields').style.display = 'block';
+                document.getElementById('prometheus-fields').style.display = 'none';
+                document.getElementById('db-url').placeholder = 'http://localhost:8086';
+            } else {
+                document.getElementById('influx-fields').style.display = 'none';
+                document.getElementById('prometheus-fields').style.display = 'block';
+                document.getElementById('db-url').placeholder = 'http://localhost:9091';
+            }
+        }
+
+        function switchSettingsPanel(panelName) {
+            document.querySelectorAll('.settings-nav-btn').forEach(btn => btn.classList.remove('active'));
+            document.querySelectorAll('.settings-panel').forEach(pan => pan.classList.remove('active'));
+            
+            event.target.classList.add('active');
+            document.getElementById(`panel-${panelName}`).classList.add('active');
+        }
+    </script>
+</body>
+</html>
